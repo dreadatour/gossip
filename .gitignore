@@ -1,0 +1,8 @@
+# Python compiles files
+*.pyc
+*.pyo
+
+# hidden files
+.*
+# except these
+!/.gitignore

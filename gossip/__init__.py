@@ -1,0 +1,3 @@
+"""
+Gossip module.
+"""
