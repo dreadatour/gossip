@@ -16,7 +16,7 @@ from gossip.worker import do_work
 if __name__ == '__main__':
     # parse command line arguments
     argparser = argparse.ArgumentParser(prog='gossip',
-                                        description='Log files proccessing.')
+                                        description='Log files proccessing')
     argparser.add_argument('-d', '--daemonize', action='store_true',
                            help='daemonize')
     argparser.add_argument('-u', '--user', help='user name or id')

@@ -244,7 +244,7 @@ class Config(object):
                         # this is global setup - save it
                         setup = self.build_source(source, parsers)
                         if 'parsers' in setup:
-                            for parser in setup['parser']:
+                            for parser in setup['parsers']:
                                 self.setup[parser['cmd']] = parser['args']
                     else:
                         # append previous source with parsers to config
