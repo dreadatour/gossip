@@ -12,6 +12,6 @@ setup(
     author='Vladimir Rudnyh',
     author_email='rudnyh@corp.mail.ru',
     url='https://github.com/dreadatour/gossip',
-    packages=['gossip'],
+    packages=['gossip', 'gossip/parsers', 'gossip/parsers/nginx'],
     scripts=['bin/gossip'],
 )
