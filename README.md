@@ -42,12 +42,12 @@ Config file example
                port = 2003,
                prefix = 'stats')
 
-    file /var/log/nginx/gossip.log as calendar_nginx_gossip
+    file /var/log/nginx/gossip.log as nginx_gossip
         base.skip_empty_string
             nginx.access_log.skip_empty_requests
                 nginx.access_log.parse
                     nginx.access_log.send_to_statsd(prefix='nginx')
         base.print_data
 
-    file /var/log/nginx/error.log as calendar_nginx_error
+    file /var/log/nginx/error.log as nginx_error
         base.print_data
