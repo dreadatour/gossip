@@ -3,6 +3,17 @@ Gossip
 
 Log files proccessing.
 
+Installation example
+--------------------
+
+    mkvirtualenv gossip
+    mkdir src
+    cd src
+    git clone git://github.com/dreadatour/gossip.git
+    cd gossip
+    pip install -r requirements/base.txt
+    python setup.py install
+
 Usage
 -----
     user@host:~$ gossip --help
