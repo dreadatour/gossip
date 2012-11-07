@@ -2,7 +2,11 @@
 *.pyc
 *.pyo
 
+# Python build files
+build/
+
 # hidden files
 .*
 # except these
 !/.gitignore
+
