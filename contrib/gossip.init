@@ -18,12 +18,11 @@ prog="$(basename $0)"
 [ -f "/etc/sysconfig/$prog" ] && . /etc/sysconfig/$prog
 
 gossip=/usr/local/gossip/bin/gossip
-user=mail
 pidfile="/var/run/$prog.pid"
 logfile="/var/log/$prog.log"
 lockfile="/var/lock/subsys/$prog"
 conffile="/usr/local/gossip/etc/gossip.conf"
-opts="--user $user --group $user --daemonize $conffile"
+opts="--log $logfile --pid $pidfile --daemonize $conffile"
 RETVAL=0
 
 start() {
@@ -42,13 +41,6 @@ stop() {
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
-}
-
-reload() {
-	echo -n $"Reloading $prog: "
-	killproc -p ${pidfile} ${prog} -HUP
-	RETVAL=$?
-	echo
 }
 
 rh_status() {
@@ -72,11 +64,8 @@ case "$1" in
 		stop
 		start
 	;;
-	force-reload|reload)
-		reload
-	;;
 	*)
-		echo $"Usage: $0 {start|stop|restart|force-reload|reload|status}"
+		echo $"Usage: $0 {start|stop|restart|status}"
 		RETVAL=2
 esac
 

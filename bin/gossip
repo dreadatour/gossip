@@ -34,7 +34,11 @@ if __name__ == '__main__':
         logger.setLevel(logging.INFO)
         formatter = logging.Formatter(
             "%(asctime)s [%(levelname)s] %(message)s")
-        handler = logging.FileHandler(args.log)
+        try:
+            handler = logging.FileHandler(args.log)
+        except IOError, e:
+            print ("ERROR: can't save log file '%s': %s" % (args.log, e))
+
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     else:
