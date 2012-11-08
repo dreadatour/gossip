@@ -6,11 +6,13 @@ import sys
 import grp
 import pwd
 import daemon
-import lockfile
+import signal
+import logging
+import logging.handlers
 import argparse
 
 from gossip.config import Config
-from gossip.worker import do_work
+from gossip.worker import PidFile, do_work
 
 
 if __name__ == '__main__':
@@ -22,16 +24,30 @@ if __name__ == '__main__':
     argparser.add_argument('-u', '--user', help='user name or id')
     argparser.add_argument('-g', '--group', help='group name or id')
     argparser.add_argument('-p', '--pid', help='pid file')
+    argparser.add_argument('-l', '--log', help='log file')
     argparser.add_argument('config', help='config file')
     args = argparser.parse_args()
+
+    # setup logger if log is defined
+    if args.log is not None:
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s")
+        handler = logging.FileHandler(args.log)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    else:
+        logger = None
+        handler = None
 
     # parse gossip config
     config = Config(args.config)
 
     if args.daemonize:
         # going crazy
-        user_id = 0
-        group_id = 0
+        user_id = None
+        group_id = None
         pidfile = None
 
         # get user id from user name. root by default
@@ -39,7 +55,7 @@ if __name__ == '__main__':
             try:
                 user_id = pwd.getpwnam(args.user).pw_uid
             except KeyError:
-                print "User '%s' is not found." % args.user
+                logger.error("User '%s' is not found." % args.user)
                 sys.exit(1)
 
         # get group id from group name. root group (wheel?) by default
@@ -47,12 +63,12 @@ if __name__ == '__main__':
             try:
                 group_id = grp.getgrnam(args.group).gr_gid
             except KeyError:
-                print "Group '%s' is not found." % args.group
+                logger.error("Group '%s' is not found." % args.group)
                 sys.exit(1)
 
         # create lockfile if defined
         if args.pid is not None:
-            pidfile = lockfile.FileLock(args.pid)
+            pidfile = PidFile(args.pid)
 
         # create daemon context
         context = daemon.DaemonContext(
@@ -62,9 +78,16 @@ if __name__ == '__main__':
             pidfile=pidfile
         )
 
+        # do not close log file on daemonize
+        if handler is not None:
+            context.files_preserve = [handler.stream]
+
+        # correct terminate on SIGHUP
+        context.signal_map = {signal.SIGHUP: 'terminate'}
+
         # do work with daemonizing
         with context:
-            do_work(config, daemonize=True)
+            do_work(config, args, logger, daemonize=True)
     else:
         # do work without daemonizing
-        do_work(config, daemonize=False)
+        do_work(config, args, logger, daemonize=False)

@@ -4,10 +4,50 @@ Gossip workers.
 """
 import os
 import time
+import fcntl
 import socket
 from multiprocessing import Process
 
 from gossip.stats import StaticticStatsD, StaticticGraphite
+
+
+class PidFile(object):
+    """
+    Context manager that locks a pid file.
+    Implemented as class not generator because daemon.py is calling .__exit__()
+    with no parameters instead of the None, None, None specified by PEP-343.
+
+    We use it, because 'lockfile.FileLock' simply does not work!
+
+    Stealed from here:
+    code.activestate.com/recipes/577911-context-manager-for-a-daemon-pid-file
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.pidfile = None
+
+    def __enter__(self):
+        self.pidfile = open(self.path, "a+")
+        try:
+            fcntl.flock(self.pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            raise SystemExit("Already running according to " + self.path)
+        self.pidfile.seek(0)
+        self.pidfile.truncate()
+        self.pidfile.write(str(os.getpid()))
+        self.pidfile.flush()
+        self.pidfile.seek(0)
+        return self.pidfile
+
+    def __exit__(self, exc_type=None, exc_value=None, exc_tb=None):
+        try:
+            self.pidfile.close()
+        except IOError as err:
+            # ok if file was just closed elsewhere
+            if err.errno != 9:
+                raise
+        os.remove(self.path)
 
 
 def worker_setup(setup):
@@ -43,12 +83,13 @@ class Worker(Process):
     Overhead? May be...
     """
     def __init__(self, parser, hostname=None, statsd=None, graphite=None,
-                 daemonize=False, parent_pid=None):
+                 daemonize=False, logger=None, parent_pid=None):
         self.parser = parser
         self.hostname = hostname
         self.statsd = statsd
         self.graphite = graphite
         self.daemonize = daemonize
+        self.logger = logger
         self.parent_pid = parent_pid
         self.logname = parser.get('name', None)
 
@@ -65,6 +106,7 @@ class Worker(Process):
                 hostname=self.hostname,
                 statsd=self.statsd,
                 graphite=self.graphite,
+                logger=self.logger,
                 **parser.get('args', {})
             )
         if data is None:
@@ -91,7 +133,12 @@ class Worker(Process):
                     else:
                         time.sleep(0.1)
         except IOError, e:
-            print "ERROR: can't read from config file '%s': %s" % (filename, e)
+            if self.logger is not None:
+                self.logger.error("can't read from config file"
+                                  " '%s': %s" % (filename, e))
+            else:
+                print ("ERROR: can't read from config file"
+                       " '%s': %s" % (filename, e))
         except KeyboardInterrupt:
             pass
 
@@ -103,7 +150,7 @@ class Worker(Process):
             self.tail_file()
 
 
-def do_work(config, daemonize=False):
+def do_work(config, args, logger, daemonize=False):
     """
     Run process for every log file from config.
     """
@@ -112,7 +159,7 @@ def do_work(config, daemonize=False):
     jobs = []
     for parser in config.config:
         job = Worker(parser, daemonize=daemonize, parent_pid=os.getpid(),
-                     **worker_kwargs)
+                     logger=logger, **worker_kwargs)
         jobs.append(job)
         job.start()
 

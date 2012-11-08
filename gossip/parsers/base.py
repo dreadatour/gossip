@@ -30,7 +30,7 @@ def grep(data, include=None, exclude=None, **kwargs):
     return None
 
 
-def print_data(data, **kwargs):
+def print_data(data, logger=None, **kwargs):
     """
     Print log string.
 
