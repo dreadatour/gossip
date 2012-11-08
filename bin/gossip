@@ -38,7 +38,7 @@ if __name__ == '__main__':
             handler = logging.FileHandler(args.log)
         except IOError, e:
             print ("ERROR: can't save log file '%s': %s" % (args.log, e))
-
+            sys.exit(1)
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     else:
