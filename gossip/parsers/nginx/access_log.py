@@ -66,36 +66,31 @@ def send_to_statsd(data, statsd, graphite, prefix=None, **kwargs):
     """
     Send all data from nginx log to statsd.
     """
-    p = ''
-    # set prefix if defined
-    if prefix is not None and isinstance(prefix, basestring):
-        p = "%s." % prefix
-
     # send 'request_length' stats - total + host
-    statsd.incr('%srequest_length' % p, data['request_length'])
+    statsd.incr('request_length', data['request_length'], prefix=prefix)
 
     # send 'request_time' stats - total + host
-    statsd.timing('%srequest_time' % p, data['request_time'])
+    statsd.timing('request_time', data['request_time'], prefix=prefix)
 
     # send 'bytes_sent' stats - total + host
-    statsd.incr('%sbytes_sent' % p, data['bytes_sent'])
+    statsd.incr('bytes_sent', data['bytes_sent'], prefix=prefix)
 
     # send 'body_bytes_sent' stats - total + host
-    statsd.incr('%sbody_bytes_sent' % p, data['body_bytes_sent'])
+    statsd.incr('body_bytes_sent', data['body_bytes_sent'], prefix=prefix)
 
     # send 'response_status' stats - total + host
-    statsd.incr('%sresponse_status.%d' % (p, data['response_status']))
+    statsd.incr('response_status.%d' % data['response_status'], prefix=prefix)
 
     # send 'request_method' stats - total + host
-    statsd.incr('%srequest_method.%s' % (p, data['request_method']))
+    statsd.incr('request_method.%s' % data['request_method'], prefix=prefix)
 
     # send stats by request type
     base_url = data['base_url']
     if base_url.endswith('.js'):
-        statsd.incr('%sstatic_type.js' % p)
+        statsd.incr('static_type.js', prefix=prefix)
     elif base_url.endswith('.png') or base_url.endswith('.jpg'):
-        statsd.incr('%sstatic_type.image' % p)
+        statsd.incr('static_type.image', prefix=prefix)
     elif base_url.endswith('.css'):
-        statsd.incr('%sstatic_type.css' % p)
+        statsd.incr('static_type.css', prefix=prefix)
 
     return data

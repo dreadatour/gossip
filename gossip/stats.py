@@ -15,23 +15,33 @@ class StaticticStatsD(object):
         self.client = StatsClient(host, port, prefix=prefix)
         self.hostname = hostname
 
-    def incr(self, metric, value=1):
+    def incr(self, metric, value=1, prefix=None):
         """
         Increment 'metric' counter with 'value'.
         """
-        self.client.incr(metric, value)
-        if self.hostname is not None:
-            # separate metric for hostname
-            self.client.incr('%s.%s' % (self.hostname, metric), value)
+        if prefix is not None:
+            metric = '%s.%s' % (prefix, metric)
 
-    def timing(self, metric, value):
+        self.client.incr(metric, value)
+
+        # separate metric for hostname
+        if self.hostname is not None:
+            metric = '%s.%s' % (self.hostname, metric)
+            self.client.incr(metric, value)
+
+    def timing(self, metric, value, prefix=None):
         """
         Send 'metric' timing.
         """
+        if prefix is not None:
+            metric = '%s.%s' % (prefix, metric)
+
         self.client.timing(metric, value)
+
+        # separate metric for hostname
         if self.hostname is not None:
-            # separate metric for hostname
-            self.client.timing('%s.%s' % (self.hostname, metric), value)
+            metric = '%s.%s' % (self.hostname, metric)
+            self.client.timing(metric, value)
 
 
 class StaticticGraphite(object):
@@ -43,7 +53,7 @@ class StaticticGraphite(object):
         self.host = host
         self.port = port
         if prefix is not None:
-            self.prefix = "%s." % prefix
+            self.prefix = '%s.' % prefix
         else:
             self.prefix = ''
 
@@ -56,11 +66,15 @@ class StaticticGraphite(object):
         sock.sendall('%s %s %d\n' % (metric, value, int(time.time())))
         sock.close()
 
-    def send(self, metric, value=1):
+    def send(self, metric, value=1, prefix=None):
         """
         Send 'value' for 'metric'.
         """
+        if prefix is not None:
+            metric = '%s.%s' % (prefix, metric)
+
         self._send("%s%s" % (self.prefix, metric), value)
+
+        # separate metric for hostname
         if self.hostname is not None:
-            # separate metric for hostname
             self._send("%s%s.%s" % (self.prefix, self.hostname, metric), value)
