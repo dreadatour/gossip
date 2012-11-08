@@ -40,6 +40,9 @@ mkdir %{buildroot}%{__prefix}/%{name}/src
 # clone repository with source files
 git clone git://github.com/dreadatour/gossip.git %{buildroot}%{__prefix}/%{name}/src/%{name}
 
+# remove git-files
+rm -rf %{buildroot}%{__prefix}/%{name}/src/%{name}/.git*
+
 # install requirements
 %{buildroot}%{__prefix}/%{name}/bin/pip install -r %{buildroot}%{__prefix}/%{name}/src/%{name}/requirements/base.txt
 
@@ -47,9 +50,6 @@ git clone git://github.com/dreadatour/gossip.git %{buildroot}%{__prefix}/%{name}
 pushd %{buildroot}%{__prefix}/%{name}/src/%{name}/
 %{buildroot}%{__prefix}/%{name}/bin/python setup.py install
 popd
-
-# remove source files
-rm -rf %{buildroot}%{__prefix}/%{name}/src
 
 # do not include *.pyc in rpm
 find %{buildroot}%{__prefix}/%{name}/ -type f -name "*.py[co]" -delete
@@ -60,8 +60,30 @@ find %{buildroot}%{__prefix}/%{name}/ -type f \
 
 
 %install
+# init.d file
+%{__install} -p -D -m 0755 %{buildroot}%{__prefix}/%{name}/src/%{name}/contrib/gossip.init %{buildroot}%{_initrddir}/%{name}
+
+# chmod binaries
+chmod +x %{buildroot}%{__prefix}/%{name}/bin/*
+
 # compile py files
 %{buildroot}%{__prefix}/%{name}/bin/python -m compileall -qf %{buildroot}%{__prefix}/%{name}/
+
+
+%post
+# create config file if not exists
+if [ ! -f %{__prefix}/%{name}/etc/gossip.conf ]; then
+	mkdir -p %{__prefix}/%{name}/etc/
+    cp %{__prefix}/%{name}/src/%{name}/contrib/gossip.conf %{__prefix}/%{name}/etc/gossip.conf
+fi
+
+ldconfig
+
+# registering services
+if [ $1 -eq 1 ];
+then
+    /sbin/chkconfig --add %{name}
+fi
 
 
 %clean
@@ -70,4 +92,5 @@ find %{buildroot}%{__prefix}/%{name}/ -type f \
 
 %files
 %defattr(-,root,root,-)
+%{_initrddir}/%{name}
 %{__prefix}/%{name}/
